@@ -59,6 +59,17 @@
   ]
 }
 
+@defform[(defconst *name* expr)]{
+  Defines @racket[*name*] as a constant with the value of
+  @racket[expr]. The @racket[*name*] must start and end with a
+  @racket[*] character.
+
+  @ex[#:eval def/check-ev
+    (defconst *num-letters* 26)
+    *num-letters*
+  ]
+}
+
 @subsection{Booleans and Conditionals}
 
 @defidform[#:kind "type" boolean]
@@ -694,13 +705,13 @@
   @ex/dd[
     (defdata fullname
       (record (first . string) (last . string)))
-    (define x (fullname "David" "Smith"))
-    x
-    (fullnamep x)
+    (defconst *x* (fullname "David" "Smith"))
+    *x*
+    (fullnamep *x*)
     (fullnamep "David")
-    (fullname-first x)
-    (fullname-last x)
-    (equal x (fullname "David" "Smith"))
+    (fullname-first *x*)
+    (fullname-last *x*)
+    (equal *x* (fullname "David" "Smith"))
   ]
 }
 

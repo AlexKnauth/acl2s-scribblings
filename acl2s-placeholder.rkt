@@ -75,7 +75,7 @@
 
 ;; -------------------------------------------------------
 
-(provide defunc let let*)
+(provide defunc defconst let let*)
 
 (define-syntax-parser defunc
   #:datum-literals [:input-contract :output-contract]
@@ -98,6 +98,16 @@
                  result
                  (error 'f "output contract violation")))
            (error 'f "input contract violation")))])
+
+(begin-for-syntax
+  (define-syntax-class *id*
+    [pattern x:id
+      #:fail-unless
+      (regexp-match-exact? #rx"\\*.*\\*" (symbol->string (syntax-e #'x)))
+      "expected *name*"]))
+
+(define-simple-macro (defconst x:*id* e:expr)
+  (define x e))
 
 ;; -------------------------------------------------------
 
