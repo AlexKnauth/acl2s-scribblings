@@ -396,6 +396,7 @@
     (list)
     (cons 1 nil)
     (list 1)
+    (rest (cons 1 nil))
   ]
 
   @bold{Warning}: @racket[nil] happens to be an empty list, a
