@@ -389,7 +389,14 @@
 
 @defthing[#:link-target? #f
           nil (listof X)]{
-  The empty list.
+  The empty list. Every list has @racket[nil] at the end.
+
+  @ex[#:eval (make-ev)
+    nil
+    (list)
+    (cons 1 nil)
+    (list 1)
+  ]
 
   @bold{Warning}: @racket[nil] happens to be an empty list, a
   boolean, and a symbol all at once, so be careful when mixing
