@@ -728,15 +728,44 @@
            (quote number)
            (quote string)
            (quote (datum ...))]]{
+  A form for creating literal data. Nothing within a
+  @racket[quote] quote form is evaluated.
+
+  A quote form can also be written by putting a single-quote
+  (apostrophe) before an expression. @racket['datum] is
+  equivalent to @racket[(@#,racket[quote] datum)].
+
   Quoting a name creates a symbol. Quoting a piece of literal
   data like a number, boolean, or string produces that same
   number, boolean, or string.
+
+  @ex[#:eval (make-ev)
+    (quote antithesis)
+    (quote 42)
+    (quote nil)
+    (quote "literal literal")
+  ]
 
   It gets more complicitated when you use it with parentheses. It
   creates a list, but it also "distributes itself" over
   everything within it, including to every element of the list. So
   @racket[(@#,racket[quote] (datum ...))] is equivalent to
   @racket[(list (@#,racket[quote] datum) ...)].
+
+  @ex[#:eval (make-ev)
+    (quote (this is not a pipe))
+    (quote (this is not a five: (+ 2 3)))
+    (quote (((distributes) ((((((((arbitrarily)))) far)))))))
+    (defunc my-function (a)
+      :input-contract t
+      :output-contract t
+      42)
+    (quote (functions are not evaluated: (my-function 5)))
+    (quote (not even quote is evaluated: (quote 5)))
+    (code:comment "keep in mind '5 is another way of writing (quote 5)")
+    (quote (quote 5))
+    (quote ((quote 5)))
+  ]
 }
 
 @section{Miscellaneous}
