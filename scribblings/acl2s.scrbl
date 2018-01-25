@@ -228,6 +228,16 @@
   ]
 }
 
+@defproc[(not [b boolean]) boolean]{
+  Produces @racket[nil] if @racket[b] is @racket[t], and
+  @racket[t] if @racket[b] is @racket[nil].
+
+  @ex[#:eval (make-ev)
+    (not t)
+    (not nil)
+  ]
+}
+
 @subsection{Equality}
 
 @defproc[(equal [a all] [b all]) boolean]{
