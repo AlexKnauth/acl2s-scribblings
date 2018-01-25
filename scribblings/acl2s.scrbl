@@ -12,7 +12,7 @@
    ev)
 
 @(define-syntax-rule (ex #:eval ev-expr form ...)
-   (examples #:eval ev-expr form ...))
+   (examples #:eval ev-expr #:label #false form ...))
 
 @title{ACL2s Reference}
 
@@ -66,6 +66,11 @@
 @defthing[t boolean]{
   The boolean representing true.
 
+  @ex[#:eval (make-ev)
+    (if t 1 2)
+    (cond (t "a") (t "b"))
+  ]
+
   @bold{Warning}: @racket[t] happens to be both a boolean and a
   symbol, so be careful when mixing symbols with booleans.
 
@@ -76,7 +81,12 @@
 }
 
 @defthing[nil boolean]{
-  The boolean representing false. 
+  The boolean representing false.
+
+  @ex[#:eval (make-ev)
+    (if nil 1 2)
+    (cond (nil "a") (t "b"))
+  ]
 
   @bold{Warning}: @racket[nil] happens to be a boolean, a list,
   and a symbol, so be careful when mixing lists with booleans,
@@ -574,7 +584,7 @@
 
 @(define dd-ev (make-ev))
 @(define-syntax-rule (ex/dd form ...)
-   (ex #:eval dd-ev #:label #f form ...))
+   (ex #:eval dd-ev form ...))
 
 @defform[#:literals [all
                      boolean
