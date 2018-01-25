@@ -22,7 +22,7 @@
 ;; Collection Info
 
 (define scribblings
-  '(["scribblings/acl2s.scrbl" ()]))
+  '(["scribblings/acl2s.scrbl" (multi-page)]))
 
 ;; --------------------------------------------------------------
 

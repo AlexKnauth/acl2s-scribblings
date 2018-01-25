@@ -14,15 +14,13 @@
 @(define-syntax-rule (ex #:eval ev-expr form ...)
    (examples #:eval ev-expr #:label #false form ...))
 
-@title{ACL2s Reference}
-
-@section{Beginner Mode}
+@title[#:style '(toc)]{ACL2s Beginner Mode}
 
 @local-table-of-contents[]
 
 @declare-exporting[acl2s-scribblings/acl2s-placeholder]
 
-@subsection{Definitions and Checks}
+@section{Definitions and Checks}
 
 @(define def/check-ev (make-ev))
 
@@ -70,7 +68,7 @@
   ]
 }
 
-@subsection{Booleans and Conditionals}
+@section{Booleans and Conditionals}
 
 @defidform[#:kind "type" boolean]
 
@@ -259,7 +257,7 @@
   ]
 }
 
-@subsection{Equality}
+@section{Equality}
 
 @defproc[(equal [a all] [b all]) boolean]{
   Produces @racket[t] if @racket[a] and @racket[b] are equal,
@@ -277,7 +275,7 @@
   ]
 }
 
-@subsection{Numbers}
+@section{Numbers}
 
 @deftogether[[
   @defidform[#:kind "type" rational]
@@ -385,7 +383,7 @@
   ]
 }
 
-@subsection{Lists and Pairs}
+@section{Lists and Pairs}
 
 @defform[#:kind "type" (listof X)]
 
@@ -540,7 +538,7 @@
   ]
 }
 
-@subsection{Symbols}
+@section{Symbols}
 
 @defidform[#:kind "type" symbol]
 
@@ -576,7 +574,7 @@
   ]
 }
 
-@subsection{Strings}
+@section{Strings}
 
 @defidform[#:kind "type" string]
 
@@ -591,7 +589,7 @@
   ]
 }
 
-@subsection{Data Definitions}
+@section{Data Definitions}
 
 @(define dd-ev (make-ev))
 @(define-syntax-rule (ex/dd form ...)
@@ -715,7 +713,7 @@
   ]
 }
 
-@subsection{The @racket[quote] form}
+@section{The @racket[quote] form}
 
 @defform*[[(quote name)
            (quote boolean)
@@ -733,7 +731,7 @@
   @racket[(list (@#,racket[quote] datum) ...)].
 }
 
-@subsection{Miscellaneous}
+@section{Miscellaneous}
 
 @defproc[(atom [v all]) boolean]{
   Produces @racket[t] if @racket[v] is anything other than a
