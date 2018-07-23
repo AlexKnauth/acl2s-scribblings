@@ -7,12 +7,13 @@
          syntax/parse/define
          (for-syntax racket/base
                      racket/syntax
+                     syntax/id-set
                      syntax/parse/class/local-value
                      "util/stx.rkt"))
 
 ;; -------------------------------------------------------
 
-(provide #%datum quote t nil list)
+(provide #%datum #%app quote t nil list)
 
 (define-syntax-parser #%datum
   [(_ . x:number)
@@ -30,6 +31,13 @@
         #f "true is written as `t`" #'b)
        (raise-syntax-error
         #f "false is written as `nil`" #'b))])
+
+(define-syntax-parser #%app
+  [(_ f:expr a:expr ...)
+   (quasisyntax/loc this-syntax
+     (rkt:#%plain-app #,(syntax-property #'f 'function #true)
+                      a
+                      ...))])
 
 (define-syntax-parser quote
   [(_ s:id) #'(rkt:quote s)]
@@ -453,5 +461,52 @@
 
 ;; -------------------------------------------------------
 
+(provide test?)
+
 ;; TODO: test?, thm
+
+(begin-for-syntax
+  (define b-id-set* immutable-bound-id-set)
+  (define (b-id-set . lst) (b-id-set* lst))
+  (define b-id-set-un bound-id-set-union)
+  (define (b-id-set-un* lst) (apply b-id-set-un lst))
+
+  (define-syntax-class freevar
+    [pattern x:id
+      #:when (not (syntax-property #'x 'function))
+      #:do [(define str (symbol->string (syntax-e #'x)))]
+      #:when (not (regexp-match-exact? #rx"^\\*.*\\*$" str))])
+
+  (define-syntax-class expr-with-freevars
+    #:attributes [[freevar 1] expansion]
+    [pattern expr:expr
+      #:with expansion (local-expand #'expr 'expression '())
+      #:with [freevar ...]
+      (bound-id-set->list ((find-freevars (b-id-set)) #'expansion))])
+
+  (define ((find-freevars G) e)
+    (define (free e) ((find-freevars G) e))
+    (syntax-parse e
+      #:literals [#%plain-app rkt:if rkt:let-values]
+      [x:freevar (if (bound-id-set-member? G #'x)
+                     (b-id-set)
+                     (b-id-set #'x))]
+      [(#%plain-app f a ...)
+       (b-id-set-un* (cons (free #'f) (map free (attribute a))))]
+      [(rkt:if c t e)
+       (b-id-set-un (free #'c) (free #'t) (free #'e))]
+      [(rkt:let-values ([x a] ...) b)
+       (define G* (b-id-set-un G (b-id-set* (attribute x))))
+       (b-id-set-un (b-id-set-un* (map free (attribute a)))
+                    ((find-freevars G*) #'b))]
+      [_ (b-id-set)]))
+  )
+
+(define-syntax-parser test?
+  [(_ expr:expr-with-freevars)
+   #'(check-true (bool->rkt
+                  (rkt:let ([expr.freevar 'expr.freevar] ...)
+                    expr.expansion)))])
+
+;; -------------------------------------------------------
 

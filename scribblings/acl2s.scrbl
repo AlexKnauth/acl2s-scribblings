@@ -68,6 +68,47 @@
   ]
 }
 
+@defform[(test? expr-with-free-vars)]{
+  Tests whether the @racket[expr-with-free-vars] is always true
+  when a bunch of different values are filled in for the free
+  variables.
+
+  The simplest @racket[test?]s, without free variables, just
+  check that the expression produces true:
+
+  @ex[#:eval def/check-ev
+    (test? t)
+    (test? nil)
+    (test? (equal (sum-n 5) 15))
+    (test? (< (sum-n 10) 100))
+    (test? (integerp 36))
+    (test? (integerp "not an integer"))
+    (test? (equal (rev (list 7 8 9)) (list 9 8 7)))
+  ]
+
+  Other @racket[test?]s might use free variables to test that
+  it works the same way for any values.
+
+  @ex[#:eval def/check-ev
+    (test? (equal (rev (list a b c)) (list c b a)))
+    (test? (equal (app (list a b) (list c d)) (list a b c d)))
+  ]
+
+  To test functions that work on only a certain types of data,
+  you can guard tests with an @racket[implies] form. The
+  @racket[sum-n] function works on natural numbers, so you
+  can wrap @racket[(implies (natp x) ....)] around the test
+  expression to test it with only natural numbers.
+
+  @ex[#:eval def/check-ev
+    (test? (implies (natp x) (> (sum-n x) x)))
+    (test? (implies (natp y) (< (sum-n y) (* y y))))
+    (test? (implies (natp n)
+             (equal (sum-n n)
+                    (/ (* n (+ n 1)) 2))))
+  ]
+}
+
 @section{Booleans and Conditionals}
 
 @defidform[#:kind "type" boolean]
@@ -264,6 +305,7 @@
     (implies t nil)
     (implies nil t)
     (implies nil nil)
+    (test? (implies (natp n) (<= n (* n n))))
   ]
 }
 
