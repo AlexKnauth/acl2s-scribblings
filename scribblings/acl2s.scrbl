@@ -257,6 +257,16 @@
   ]
 }
 
+@defform[(implies ante-expr conseq-expr)]{
+
+  @ex[#:eval (make-ev)
+    (implies t t)
+    (implies t nil)
+    (implies nil t)
+    (implies nil nil)
+  ]
+}
+
 @section{Equality}
 
 @defproc[(equal [a all] [b all]) boolean]{
