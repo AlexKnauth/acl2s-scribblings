@@ -7,9 +7,85 @@
          syntax/parse/define
          (for-syntax racket/base
                      racket/syntax
+                     syntax/apply-transformer
                      syntax/id-set
                      syntax/parse/class/local-value
                      "util/stx.rkt"))
+
+;; -------------------------------------------------------
+
+(begin-for-syntax
+  (define core-expr-literal-ids
+    (list #'#%datum #'#%app #'quote #'if #'let))
+
+  (define-literal-set core-expr-literals
+    [#%datum #%app quote if let])
+
+  (define-syntax-class (core-expr [ctx #f])
+    [pattern e:expr
+      #:with expansion (expand-core-expr #'e ctx)])
+
+  (define-syntax-class (core-fn-expr [ctx #f])
+    [pattern e:expr
+      #:with expansion (expand-core-fn-expr #'e ctx)])
+
+  (define (expand-once/transformer e ctx)
+    (syntax-parse e
+      [(~or m:id (m:id . _))
+       (local-apply-transformer (syntax-local-value #'m) e 'expression
+                                (or ctx '()))]))
+
+  (define (expand-core-expr e ctx)
+    (syntax-parse (local-expand e 'expression core-expr-literal-ids ctx)
+      #:literal-sets [core-expr-literals]
+      [x:id e]
+      [(#%datum . _)
+       (syntax-parse (expand-once/transformer e ctx)
+         [({~literal rkt:quote} _) e]
+         [e* (expand-core-expr #'e* ctx)])]
+      [(ap:#%app {~var f (core-fn-expr ctx)} {~var a (core-expr ctx)} ...)
+       (syntax/loc e (ap f.expansion a.expansion ...))]
+      [(quote _)
+       (syntax-parse (expand-once/transformer e ctx)
+         [({~literal rkt:quote} _) e]
+         [e* (expand-core-expr #'e* ctx)])]
+      [(i:if {~var a (core-expr ctx)}
+             {~var b (core-expr ctx)}
+             {~var c (core-expr ctx)})
+       (syntax/loc e (i a.expansion b.expansion c.expansion))]
+      [(l:let ([x:id a:expr] ...) b:expr)
+
+       #:with [{~var a* (core-expr ctx)} ...] #'[a ...]
+
+       ;; create a context where the xs are bound
+       #:do [(define ctx* (syntax-local-make-definition-context ctx))
+             (define (intro stx)
+               (internal-definition-context-introduce ctx* stx))
+             (syntax-local-bind-syntaxes (attribute x) #f ctx*)]
+
+       #:with [x* ...] (intro #'[x ...])
+       #:with {~var b* (core-expr ctx*)} (intro #'b)
+
+       (syntax/loc e (l ([x* a*.expansion] ...) b*.expansion))]
+
+      ;; implicit insertion of #%app
+      [(f:id . args)
+       #:fail-when (and (syntax-local-value #'f (λ () #f) ctx) #'f)
+       "expected a function, given a macro"
+       #:with app (datum->syntax e '#%app e)
+       (expand-core-expr (syntax/loc e (app f . args)) ctx)]
+
+      ;; implicit insertion of #%datum
+      [{~and a {~or :number :str :char :boolean}}
+       #:with datum (datum->syntax e '#%datum e)
+       (expand-core-expr (syntax/loc e (datum . a)) ctx)]
+      ))
+
+  (define (expand-core-fn-expr e ctx)
+    (syntax-property (expand-core-expr (syntax-property e 'function #true) ctx)
+                     'function
+                     #true))
+  )
 
 ;; -------------------------------------------------------
 
@@ -45,7 +121,7 @@
   [(_ s:str) #'(#%datum . s)]
   [(_ c:char) #'(#%datum . c)]
   [(_ b:boolean) #'(#%datum . b)]
-  [(_ ()) #'(rkt:quote nil)]
+  [(_ ()) #'(quote nil)]
   [(_ (a ...)) #'(list (quote a) ...)]
   [(_ (a ... . b)) #'(list* (quote a) ... (quote b))])
 
@@ -61,6 +137,8 @@
 (define (equal a b) (rkt->bool (equal? a b)))
 
 (define-binary-check (check= a b) (equal? a b))
+(define-simple-check (check-t e)
+  (bool->rkt e))
 
 (define (bool->rkt v)
   (case v
@@ -479,23 +557,22 @@
 
   (define-syntax-class expr-with-freevars
     #:attributes [[freevar 1] expansion]
-    [pattern expr:expr
-      #:with expansion (local-expand #'expr 'expression '())
+    [pattern :core-expr
       #:with [freevar ...]
       (bound-id-set->list ((find-freevars (b-id-set)) #'expansion))])
 
   (define ((find-freevars G) e)
     (define (free e) ((find-freevars G) e))
     (syntax-parse e
-      #:literals [#%plain-app rkt:if rkt:let-values]
+      #:literal-sets [core-expr-literals]
       [x:freevar (if (bound-id-set-member? G #'x)
                      (b-id-set)
                      (b-id-set #'x))]
-      [(#%plain-app f a ...)
+      [(#%app f a ...)
        (b-id-set-un* (cons (free #'f) (map free (attribute a))))]
-      [(rkt:if c t e)
+      [(if c t e)
        (b-id-set-un (free #'c) (free #'t) (free #'e))]
-      [(rkt:let-values ([x a] ...) b)
+      [(let ([x a] ...) b)
        (define G* (b-id-set-un G (b-id-set* (attribute x))))
        (b-id-set-un (b-id-set-un* (map free (attribute a)))
                     ((find-freevars G*) #'b))]
@@ -504,9 +581,9 @@
 
 (define-syntax-parser test?
   [(_ expr:expr-with-freevars)
-   #'(check-true (bool->rkt
-                  (rkt:let ([expr.freevar 'expr.freevar] ...)
-                    expr.expansion)))])
+   (syntax/loc this-syntax
+     (check-t (rkt:let ([expr.freevar 'expr.freevar] ...)
+                expr.expansion)))])
 
 ;; -------------------------------------------------------
 
