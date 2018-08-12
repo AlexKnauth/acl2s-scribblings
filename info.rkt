@@ -10,6 +10,7 @@
   '("base"
     "rackunit-lib"
     "syntax-classes-lib"
+    "syntax-class-or"
     ))
 
 (define build-deps
