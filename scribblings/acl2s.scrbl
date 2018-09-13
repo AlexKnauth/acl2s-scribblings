@@ -14,7 +14,13 @@
 @(define-syntax-rule (ex #:eval ev-expr form ...)
    (examples #:eval ev-expr #:label #false form ...))
 
+@(define full-ACL2-doc-url
+   "https://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/?topic=ACL2____TOP")
+
 @title[#:style '(toc)]{ACL2s Beginner Mode}
+
+For more information on full @italic{ACL2} (as opposed to ACL2@italic{s}),
+see the @hyperlink[full-ACL2-doc-url]{ACL2 Manual}.
 
 @local-table-of-contents[]
 
