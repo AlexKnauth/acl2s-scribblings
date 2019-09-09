@@ -612,7 +612,7 @@ see the @hyperlink[full-ACL2-doc-url]{ACL2 Manual}.
   ]
 }
 
-@defproc[(in [a all] [l (listof all)]) boolean]{
+@defproc[(in [a all] [l tl]) boolean]{
   Produces @racket[t] if the list @racket[l] contains the value
   @racket[a] somewhere in it (according to @racket[equal]).
 
@@ -687,6 +687,7 @@ see the @hyperlink[full-ACL2-doc-url]{ACL2 Manual}.
                      symbol string
                      enum oneof
                      range
+                     tl
                      list cons listof
                      record
                      < <=]
@@ -703,7 +704,7 @@ see the @hyperlink[full-ACL2-doc-url]{ACL2 Manual}.
            (listof type)
            (record (field-name . type) ...)]
           [simple-type
-           all boolean symbol string numeric-type]
+           all boolean symbol string tl numeric-type]
           [numeric-type
            rational integer nat pos]
           [range-constraints
