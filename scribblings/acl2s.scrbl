@@ -459,7 +459,25 @@ see the @hyperlink[full-ACL2-doc-url]{ACL2 Manual}.
 
 @section{Lists and Pairs}
 
-@defform[#:kind "type" (listof X)]
+@deftogether[[
+  @defidform[#:kind "type" tl]
+  @defform[#:kind "type" (listof X)]
+]]
+
+@defproc[(tlp [v all]) boolean]{
+  Produces @racket[t] if @racket[v] is a true list,
+  @racket[nil] otherwise. A true list is either @racket[nil]
+  or a @racket[cons] pair with a true list in the rest
+  position.
+
+  @ex[#:eval (make-ev)
+    (tlp nil)
+    (tlp (cons 1 (cons 2 (cons 3 nil))))
+    (tlp "lime")
+    (code:comment "if it doesn't end with nil, it's not a true list:")
+    (tlp (cons 1 (cons 2 3)))
+  ]
+}
 
 @defthing[#:link-target? #f
           nil (listof X)]{
@@ -548,20 +566,6 @@ see the @hyperlink[full-ACL2-doc-url]{ACL2 Manual}.
     (rest (cons 5 nil))
     (rest (cons 1 (cons 2 (cons 3 nil))))
     (rest (list "apple" "banana" "cherry"))
-  ]
-}
-
-@defproc[(tlp [v all]) boolean]{
-  Produces @racket[t] if @racket[v] is a true list,
-  @racket[nil] otherwise. A list is either @racket[nil] or a
-  @racket[cons] pair with a true list in the rest position.
-
-  @ex[#:eval (make-ev)
-    (tlp nil)
-    (tlp (cons 1 (cons 2 (cons 3 nil))))
-    (tlp "lime")
-    (code:comment "if it doesn't end with nil, it's not a true list:")
-    (tlp (cons 1 (cons 2 3)))
   ]
 }
 
