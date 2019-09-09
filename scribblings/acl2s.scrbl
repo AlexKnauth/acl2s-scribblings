@@ -30,6 +30,22 @@ see the @hyperlink[full-ACL2-doc-url]{ACL2 Manual}.
 
 @(define def/check-ev (make-ev))
 
+@defform[(definec fn-name (param ...) :out-type
+           body-expr)
+         #:grammar
+         ([param (code:line param-name :in-type)])]{
+  Defines the function @racket[fn-name].
+
+  @ex[#:eval def/check-ev
+    (code:comment "sum-n : Nat -> Nat")
+    (code:comment "Given n, return 0 + 1 + 2 + ... + n")
+    (definec sum-n (n :nat) :nat
+      (cond ((equal n 0) 0)
+            (t (code:comment "else")
+             (+ n (sum-n (- n 1))))))
+  ]
+}
+
 @defform[#:literals [:input-contract :output-contract]
          (defunc fn-name (param-name ...)
            :input-contract in-ctc-expr
@@ -38,8 +54,8 @@ see the @hyperlink[full-ACL2-doc-url]{ACL2 Manual}.
   Defines the function @racket[fn-name].
 
   @ex[#:eval def/check-ev
-    (code:comment "sum-n : integer -> integer")
-    (code:comment "Given integer n, return 0 + 1 + 2 + ... + n")
+    (code:comment "sum-n : Nat -> Nat")
+    (code:comment "Given n, return 0 + 1 + 2 + ... + n")
     (defunc sum-n (n)
       :input-contract (natp n)
       :output-contract (natp (sum-n n))
@@ -151,7 +167,7 @@ see the @hyperlink[full-ACL2-doc-url]{ACL2 Manual}.
   @ex[#:eval (make-ev)
     (booleanp nil)
     (symbolp nil)
-    (listp nil)
+    (tlp nil)
   ]
 }
 
@@ -462,7 +478,7 @@ see the @hyperlink[full-ACL2-doc-url]{ACL2 Manual}.
   these types together.
 
   @ex[#:eval (make-ev)
-    (listp nil)
+    (tlp nil)
     (booleanp nil)
     (symbolp nil)
   ]
@@ -486,9 +502,9 @@ see the @hyperlink[full-ACL2-doc-url]{ACL2 Manual}.
   the rest is also a list.
 
   @ex[#:eval (make-ev)
-    (listp (cons 1 (cons 2 (cons 3 (cons 4 nil)))))
+    (tlp (cons 1 (cons 2 (cons 3 (cons 4 nil)))))
     (code:comment "please never do this:")
-    (listp (cons 1 (cons 2 (cons 3 4))))
+    (tlp (cons 1 (cons 2 (cons 3 4))))
   ]
 }
 
@@ -535,17 +551,17 @@ see the @hyperlink[full-ACL2-doc-url]{ACL2 Manual}.
   ]
 }
 
-@defproc[(listp [v all]) boolean]{
-  Produces @racket[t] if @racket[v] is a list, @racket[nil]
-  otherwise. A list is either @racket[nil] or a @racket[cons]
-  pair with a list in the rest position.
+@defproc[(tlp [v all]) boolean]{
+  Produces @racket[t] if @racket[v] is a true list,
+  @racket[nil] otherwise. A list is either @racket[nil] or a
+  @racket[cons] pair with a true list in the rest position.
 
   @ex[#:eval (make-ev)
-    (listp nil)
-    (listp (cons 1 (cons 2 (cons 3 nil))))
-    (listp "lime")
-    (code:comment "if it doesn't end with nil, it's not a list:")
-    (listp (cons 1 (cons 2 3)))
+    (tlp nil)
+    (tlp (cons 1 (cons 2 (cons 3 nil))))
+    (tlp "lime")
+    (code:comment "if it doesn't end with nil, it's not a true list:")
+    (tlp (cons 1 (cons 2 3)))
   ]
 }
 
@@ -634,7 +650,7 @@ see the @hyperlink[full-ACL2-doc-url]{ACL2 Manual}.
   @ex[#:eval (make-ev)
     (symbolp nil)
     (booleanp nil)
-    (listp nil)
+    (tlp nil)
     (symbolp t)
     (booleanp t)
   ]

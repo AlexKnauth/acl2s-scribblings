@@ -89,6 +89,50 @@
 
 ;; -------------------------------------------------------
 
+(provide allp
+         all
+         boolean
+         rational integer nat pos
+         symbol string
+         tl)
+
+(begin-for-syntax
+  ;; data description ids for defdata
+  (struct data-desc [recognizer-id] #:transparent)
+
+  (define-syntax-class type-id
+    #:attributes [recognizer]
+    [pattern tid
+      #:declare tid (local-value data-desc?)
+      #:with recognizer:id
+      (data-desc-recognizer-id (attribute tid.local-value))])
+  
+  (define-syntax-class colon-type
+    #:attributes [recognizer]
+    [pattern x:id
+      #:do [(define str (symbol->string (syntax-e #'x)))]
+      #:fail-unless (<= 1 (string-length str)) "expected a colon `:`"
+      #:fail-unless (char=? (string-ref str 0) #\:) "expected a colon `:`"
+      #:with :type-id (format-id #'x "~a" (substring str 1))]))
+
+(define (allp v) 't)
+
+(define-syntax all (data-desc #'allp))
+
+(define-syntax boolean (data-desc #'booleanp))
+
+(define-syntax rational (data-desc #'rationalp))
+(define-syntax integer (data-desc #'integerp))
+(define-syntax nat (data-desc #'natp))
+(define-syntax pos (data-desc #'posp))
+
+(define-syntax symbol (data-desc #'symbolp))
+(define-syntax string (data-desc #'stringp))
+
+(define-syntax tl (data-desc #'tlp))
+
+;; -------------------------------------------------------
+
 (provide #%datum #%app quote t nil list)
 
 (define-syntax-parser #%datum
@@ -161,7 +205,22 @@
 
 ;; -------------------------------------------------------
 
-(provide defunc defconst let let*)
+(provide definec defunc defconst let let*)
+
+(begin-for-syntax
+  (define-splicing-syntax-class param-colon-type
+    #:attributes [id type type.recognizer]
+    [pattern {~seq id:id type:colon-type}]))
+
+(define-syntax-parser definec
+  [(_ f:id (in:param-colon-type ...) out:colon-type
+      body:expr)
+   #:with in-ctc #'(and (in.type.recognizer in.id) ...)
+   #:with out-ctc #'(out.recognizer (f in.id ...))
+   #'(defunc f (in.id ...)
+       :input-contract in-ctc
+       :output-contract out-ctc
+       body)])
 
 (define-syntax-parser defunc
   #:datum-literals [:input-contract :output-contract]
@@ -237,16 +296,14 @@
     [(nil) 't]
     [else 'nil]))
 
-(defunc not (b)
-  :input-contract (booleanp b)
-  :output-contract (booleanp (not b))
+(definec not (b :boolean) :boolean
   (case b [(t) 'nil] [(nil) 't]))
 
 ;; -------------------------------------------------------
 
 ;; Basic Pair and List Operations
 
-(provide cons consp atom first rest listp endp)
+(provide cons consp atom first rest tlp endp)
 
 (define (consp v) (rkt->bool (cons? v)))
 (define (atom v) (rkt->bool (rkt:not (cons? v))))
@@ -261,14 +318,12 @@
   :output-contract t
   (cdr p))
 
-(define (listp v)
+(define (tlp v)
   (if (consp v)
-      (listp (rest v))
+      (tlp (rest v))
       (equal v nil)))
 
-(defunc endp (l)
-  :input-contract (listp l)
-  :output-contract (booleanp (endp l))
+(definec endp (l :tl) :boolean
   (rkt->bool (rkt:not (cons? l))))
 
 ;; -------------------------------------------------------
@@ -292,29 +347,19 @@
 (define (posp v)
   (rkt->bool (exact-positive-integer? v)))
 
-(defunc < (a b)
-  :input-contract (and (rationalp a) (rationalp b))
-  :output-contract (booleanp (< a b))
+(definec < (a :rational b :rational) :boolean
   (rkt->bool (rkt:< a b)))
 
-(defunc > (a b)
-  :input-contract (and (rationalp a) (rationalp b))
-  :output-contract (booleanp (> a b))
+(definec > (a :rational b :rational) :boolean
   (rkt->bool (rkt:> a b)))
 
-(defunc <= (a b)
-  :input-contract (and (rationalp a) (rationalp b))
-  :output-contract (booleanp (<= a b))
+(definec <= (a :rational b :rational) :boolean
   (rkt->bool (rkt:<= a b)))
 
-(defunc >= (a b)
-  :input-contract (and (rationalp a) (rationalp b))
-  :output-contract (booleanp (>= a b))
+(definec >= (a :rational b :rational) :boolean
   (rkt->bool (rkt:>= a b)))
 
-(defunc unary-- (a)
-  :input-contract (rationalp a)
-  :output-contract (rationalp (unary-- a))
+(definec unary-- (a :rational) :rational
   (rkt:- a))
 
 (defunc unary-/ (a)
@@ -322,9 +367,7 @@
   :output-contract (rationalp (unary-/ a))
   (rkt:/ a))
 
-(defunc - (a b)
-  :input-contract (and (rationalp a) (rationalp b))
-  :output-contract (rationalp (- a b))
+(definec - (a :rational b :rational) :rational
   (rkt:- a b))
 
 (defunc / (a b)
@@ -352,30 +395,22 @@
 
 (provide len app rev in)
 
-(defunc len (l)
-  :input-contract (listp l)
-  :output-contract (natp (len l))
+(definec len (l :tl) :nat
   (cond ((endp l) 0)
         (t ;else
          (+ 1 (len (rest l))))))
 
-(defunc app (x y)
-  :input-contract (and (listp x) (listp y))
-  :output-contract (listp (app x y))
+(definec app (x :tl y :tl) :tl
   (cond ((endp x) y)
         (t ;else
          (cons (first x) (app (rest x) y)))))
 
-(defunc rev (x)
-  :input-contract (listp x)
-  :output-contract (listp (rev x))
+(definec rev (x :tl) :tl
   (cond ((endp x) '())
         (t ;else
          (app (rev (rest x)) (list (first x))))))
 
-(defunc in (a l)
-  :input-contract (listp l)
-  :output-contract (booleanp (in a l))
+(definec in (a :all l :tl) :boolean
   (match l
     [(list-rest elems ... (== 'nil))
      (rkt->bool (member a elems))]))
@@ -385,10 +420,6 @@
 ;; Defdata
 
 (provide defdata
-         all
-         boolean
-         rational integer nat pos
-         symbol string
          enum oneof
          range
          record
@@ -404,27 +435,10 @@
 (define-syntax listof err-outside-defdata)
 
 (begin-for-syntax
-  ;; data description ids for defdata
-  (struct data-desc [pred-id] #:transparent)
-
   (define-syntax-class lt
     #:literals [< <=]
     [pattern <]
     [pattern <=]))
-
-(define (allp v) 't)
-
-(define-syntax all (data-desc #'allp))
-
-(define-syntax boolean (data-desc #'booleanp))
-
-(define-syntax rational (data-desc #'rationalp))
-(define-syntax integer (data-desc #'integerp))
-(define-syntax nat (data-desc #'natp))
-(define-syntax pos (data-desc #'posp))
-
-(define-syntax symbol (data-desc #'symbolp))
-(define-syntax string (data-desc #'stringp))
 
 (define-syntax-parser defdata
   [(_ name:id dd:expr)
@@ -471,10 +485,8 @@
 (define-syntax-parser data-desc-test
   #:literals [t nil enum oneof range listof list cons record
               rational integer]
-  [(_ v:id ddi)
-   #:declare ddi (local-value data-desc?)
-   #:with pred:id (data-desc-pred-id (attribute ddi.local-value))
-   #'(pred v)]
+  [(_ v:id ddi:type-id)
+   #'(ddi.recognizer v)]
 
   ;; singleton things
   [(_ v:id n:number) #'(equal v 'n)]
